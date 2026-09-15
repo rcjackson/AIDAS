@@ -12,7 +12,7 @@ def aeqd_to_lonlat(x, y, lon_0, lat_0):
     WGS84 ellipsoid.
 
     This is a self-contained replacement for projecting radar gate positions
-    with PROJ (``+proj=aeqd +ellps=WGS84``). ADAM feeds the resulting image to a
+    with PROJ (``+proj=aeqd +ellps=WGS84``). AIDAS feeds the resulting image to a
     neural network, so the geolocation has to be reproducible: a change in the
     projection library shifts every gate, which moves the inferred lake breeze
     front. Computing it here means the model input depends only on this

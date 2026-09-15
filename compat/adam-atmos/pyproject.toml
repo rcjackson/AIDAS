@@ -1,0 +1,37 @@
+# Build configuration for the final, transitional `adam-atmos` release.
+#
+# This is deliberately a separate project from the one at the repository root:
+# PyPI distribution names cannot be renamed, so `adam-atmos` lives on as a thin
+# shim that depends on `aidas-atmos` and forwards `import adam` to `aidas`.
+#
+# To publish:  cd compat/adam-atmos && python -m build && twine upload dist/*
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "adam-atmos"
+version = "0.5.1"
+description = "Deprecated: adam-atmos has been renamed to aidas-atmos (Argonne AI-Driven Adaptive Sampling System)."
+readme = "README.rst"
+authors = [
+  {name = "Robert Clyde Jackson", email = "rjackson@anl.gov"}
+]
+maintainers = [
+  {name = "Robert Clyde Jackson", email = "rjackson@anl.gov"}
+]
+license = {text = "BSD license"}
+classifiers = [
+    "Development Status :: 7 - Inactive",
+]
+dependencies = [
+    "aidas-atmos>=0.6.0",
+]
+
+[project.urls]
+homepage = "https://github.com/rcjackson/AIDAS"
+documentation = "https://rcjackson.github.io/AIDAS/"
+
+[tool.setuptools]
+package-dir = {"" = "src"}

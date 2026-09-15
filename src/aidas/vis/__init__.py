@@ -1,9 +1,9 @@
 """
 ============================
-adam.vis (adam.vis)
+aidas.vis (aidas.vis)
 ============================
 
-.. currentmodule:: adam.vis
+.. currentmodule:: aidas.vis
 
 This module handles the visualization of the lake breeze mask on radar data.
 

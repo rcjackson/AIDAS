@@ -1,1 +1,1 @@
-"""Unit test package for adam."""
+"""Unit test package for aidas."""

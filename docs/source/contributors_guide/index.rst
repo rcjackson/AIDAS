@@ -14,8 +14,8 @@ There are just some things that we ask of you. One is that your code be able
 to be distributed under the BSD 3-clause license, which is available in LICENSE
 in the main directory.
 
-One, we ask, that when on the GitHub forum or making contributions to ADAM
-that all developers and users follow the ADAM code of conduct.
+One, we ask, that when on the GitHub forum or making contributions to AIDAS
+that all developers and users follow the AIDAS code of conduct.
 
 
 Contributor Covenant Code of Conduct
@@ -100,7 +100,7 @@ available at `<http://contributor-covenant.org/version/1/4>`_
 Code Style
 ----------
 
-ADAM follows the PEP8 code standards. To make sure the code follows the PEP8
+AIDAS follows the PEP8 code standards. To make sure the code follows the PEP8
 style, there are checkers available out there such as pylint and pycodestyle.
 
 For more on PEP8 style:
@@ -156,7 +156,7 @@ For an example format of the documentation, see this:
         radar_scan: :code:`RadarImage`
             The RadarImage object containing the radar image.
         model_name: str
-            The model to use. Currently, ADAM has 2 models:
+            The model to use. Currently, AIDAS has 2 models:
             'lakebreeze_model_fcn_resnet50_no_augmentation': 
             A fine-tuned ResNet50 with no data augmentation. Typically more liberal
             in detecting lake breezes.
@@ -178,25 +178,25 @@ For an example format of the documentation, see this:
 Testing
 -------
 
-When adding a new function to ADAM it is important to add it to the __init__.py
+When adding a new function to AIDAS it is important to add it to the __init__.py
 under the corresponding folder.
 
 Create a test function and use assert to test the calculated values against known
 values. For an example, see:
 
-`<https://github.com/rcjackson/ADAM/blob/main/tests/test_adam.py>`_
+`<https://github.com/rcjackson/AIDAS/blob/main/tests/test_aidas.py>`_
 
 Pytest will run this test whenever a pull request is made to the main branch
-of the rcjackson/ADAM repository. This will then allow the maintainers to
-determine how the pull request will affect the functionality of ADAM.
+of the rcjackson/AIDAS repository. This will then allow the maintainers to
+determine how the pull request will affect the functionality of AIDAS.
 
 
 .. code-block:: python
 
     def test_infer_fcn_resnet50():
         torch.manual_seed(42)
-        rad_scan = adam.io.preprocess_radar_image('KLOT', '2025-07-15T18:00:00')
-        rad_scan = adam.model.infer_lake_breeze(rad_scan, model_name='lakebreeze_best_model_fcn_resnet50')
+        rad_scan = aidas.io.preprocess_radar_image('KLOT', '2025-07-15T18:00:00')
+        rad_scan = aidas.model.infer_lake_breeze(rad_scan, model_name='lakebreeze_best_model_fcn_resnet50')
         assert rad_scan.lakebreeze_mask.sum() == 714
         assert rad_scan.lakebreeze_mask.shape == (256, 256)
 
@@ -204,8 +204,8 @@ determine how the pull request will affect the functionality of ADAM.
 GitHub
 ------
 
-When you make contributions to ADAM, we ask that you make your own fork
-of rcjackson/ADAM and create your own branch from within that fork. After
+When you make contributions to AIDAS, we ask that you make your own fork
+of rcjackson/AIDAS and create your own branch from within that fork. After
 forking the repository on GitHub, create your own branch by doing:
 
 ::
@@ -220,4 +220,4 @@ Make your changes, commit, and then to push to that branch do:
     git push origin this_branch
 
 After that is done, make a pull request from that branch to the main branch
-on rcjackson/ADAM where the maintainers will review your pull request.
+on rcjackson/AIDAS where the maintainers will review your pull request.

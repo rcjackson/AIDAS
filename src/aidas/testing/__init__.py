@@ -1,11 +1,11 @@
 """
 ============================
-adam.testing (adam.testing)
+aidas.testing (aidas.testing)
 ============================
 
-.. currentmodule:: adam.testing
+.. currentmodule:: aidas.testing
 
-This module handles testing utilities for ADAM.
+This module handles testing utilities for AIDAS.
 
 
 .. autosummary::

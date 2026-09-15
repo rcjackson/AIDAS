@@ -1,9 +1,9 @@
 """
 ============================
-adam.io (adam.io)
+aidas.io (aidas.io)
 ============================
 
-.. currentmodule:: adam.io
+.. currentmodule:: aidas.io
 
 This module handles the preprocessing of radar data.
 

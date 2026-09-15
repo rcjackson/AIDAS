@@ -7,7 +7,7 @@ Developer Reference Manual
 :Release: |version|
 :Date: |today|
 
-This is the developer reference guide for ADAM which covers most of the
+This is the developer reference guide for AIDAS which covers most of the
 available functions, modules, and classes.
 
 ============================
@@ -16,7 +16,7 @@ available functions, modules, and classes.
 
 Module containing functions to load and preprocess radar data for inference.
 
-.. automodule:: adam.io
+.. automodule:: aidas.io
     :members:
     :undoc-members:
     :show-inheritance:
@@ -27,7 +27,7 @@ Module containing functions to load and preprocess radar data for inference.
 
 Main module for inference.
 
-.. automodule:: adam.model
+.. automodule:: aidas.model
     :members:
     :undoc-members:
     :show-inheritance:
@@ -38,7 +38,7 @@ Main module for inference.
 
 Main module for visualization.
 
-.. automodule:: adam.vis
+.. automodule:: aidas.vis
     :members:
     :undoc-members:
     :show-inheritance:
@@ -49,7 +49,7 @@ Main module for visualization.
 
 Main module for triggering lidar scans.
 
-.. automodule:: adam.triggering
+.. automodule:: aidas.triggering
     :members:
     :undoc-members:
     :show-inheritance:
@@ -60,7 +60,7 @@ Main module for triggering lidar scans.
 
 Main module for testing.
 
-.. automodule:: adam.testing
+.. automodule:: aidas.testing
     :members:
     :undoc-members:
     :show-inheritance:
@@ -71,7 +71,7 @@ Main module for testing.
 
 Module with various utilities.
 
-.. automodule:: adam.util
+.. automodule:: aidas.util
     :members:
     :undoc-members:
     :show-inheritance:

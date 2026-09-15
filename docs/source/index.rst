@@ -1,4 +1,4 @@
-Welcome to ATMOS Analogue Digital Twin (ADAM)'s documentation!
+Welcome to Argonne AI-Driven Adaptive Sampling System (AIDAS)'s documentation!
 ==============================================================
 
 .. grid:: 1 2 2 2
@@ -12,9 +12,9 @@ Welcome to ATMOS Analogue Digital Twin (ADAM)'s documentation!
         **User Guide**
 
         The cookbook provides in-depth information on how
-        to use ADAM, including how to get started.
+        to use AIDAS, including how to get started.
         This is where to look for general conceptual descriptions on how
-        to use parts of ADAM, including how to make your first lake breeze front and
+        to use parts of AIDAS, including how to make your first lake breeze front and
         the required data preprocessing to do so.
 
     .. grid-item-card:: :octicon:`list-unordered;10em`
@@ -25,7 +25,7 @@ Welcome to ATMOS Analogue Digital Twin (ADAM)'s documentation!
         **Reference Guide**
 
         The reference guide contains detailed descriptions on
-        every function and class within ADAM. This is where to turn to understand
+        every function and class within AIDAS. This is where to turn to understand
         how to use a particular feature or where to search for a specific tool
 
     .. grid-item-card:: :octicon:`terminal;10em`
@@ -35,10 +35,10 @@ Welcome to ATMOS Analogue Digital Twin (ADAM)'s documentation!
 
         **Developer Guide**
 
-        Want to help make ADAM better? Found something
+        Want to help make AIDAS better? Found something
         that's not working quite right? You can find instructions on how to
-        contribute to ADAM here. You can also find detailed descriptions on
-        tools useful for developing ADAM.
+        contribute to AIDAS here. You can also find detailed descriptions on
+        tools useful for developing AIDAS.
 
     .. grid-item-card:: :octicon:`graph;10em`
         :link: auto_examples/index
@@ -47,17 +47,17 @@ Welcome to ATMOS Analogue Digital Twin (ADAM)'s documentation!
 
         **Example Gallery**
 
-        Check out ADAM's gallery of examples which contains
-        sample code demonstrating various parts of ADAM's functionality.
+        Check out AIDAS's gallery of examples which contains
+        sample code demonstrating various parts of AIDAS's functionality.
 
 Getting started
 ===============
 
-ADAM is published on PyPI as ``adam-atmos``:
+AIDAS is published on PyPI as ``aidas-atmos``:
 
 .. code-block:: console
 
-    $ pip install adam-atmos
+    $ pip install aidas-atmos
 
 See :doc:`installation` for installing from source and for the full list of
 requirements.

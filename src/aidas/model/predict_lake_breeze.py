@@ -29,7 +29,7 @@ def infer_lake_breeze(radar_scan: RadarImage,
     radar_scan: :py:meth:`RadarImage`
         The RadarImage object containing the radar image.
     model_name: str
-        The model to use. Currently, ADAM has 2 models:
+        The model to use. Currently, AIDAS has 2 models:
         'lakebreeze_model_fcn_resnet50_no_augmentation': 
         A fine-tuned ResNet50 with no data augmentation. Typically more liberal
         in detecting lake breezes.
@@ -99,7 +99,7 @@ def infer_lake_breeze_batch(radar_list,
     radar_scan: list of RadarImage
         The list of RadarImages containing the radar image.
     model_name: str
-        The model to use. Currently, ADAM has 2 models:
+        The model to use. Currently, AIDAS has 2 models:
         *lakebreeze_model_fcn_resnet50_no_augmentation*: 
         A fine-tuned ResNet50 with no data augmentation. Typically more liberal
         in detecting lake breezes.

@@ -24,7 +24,7 @@ def visualize_lake_breeze(radar_scan: RadarImage, bg_field='reflectivity', time=
         The variable name of the field you want to plot the lake breeze mask over.
     time: str
         The time, in format YYYY-MM-DDTHH:MM:SS, of the radar scan to plot if the input RadarImage
-        contains batch processed radar images. ADAM will look for the closest radar scan to this specified
+        contains batch processed radar images. AIDAS will look for the closest radar scan to this specified
         time when searching for scans.
 
     Returns
