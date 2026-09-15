@@ -9,8 +9,8 @@ from scipy.ndimage import center_of_mass, label
 
 if TYPE_CHECKING:
     # Imported for type annotations only. A runtime import would be circular:
-    # adam.io reaches into adam.util for the gate geolocation helper.
-    from adam.io import RadarImage
+    # aidas.io reaches into aidas.util for the gate geolocation helper.
+    from aidas.io import RadarImage
 
 def azimuth_point(instrument_lon, instrument_lat, 
                   radar_image: RadarImage, index=None,

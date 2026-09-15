@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from adam.util import aeqd_to_lonlat
+from aidas.util import aeqd_to_lonlat
 
 # KLOT, the radar the rest of the suite uses.
 LON_0, LAT_0 = -88.084444, 41.604444
@@ -52,7 +52,7 @@ def test_shape_is_preserved():
 def test_matches_pyproj():
     """
     The model input depends on this geolocation, so it must agree with the
-    reference implementation. ADAM computes it here rather than calling PROJ so
+    reference implementation. AIDAS computes it here rather than calling PROJ so
     that a PROJ release cannot silently move every radar gate, which is what
     broke the triggering tests when PROJ 9.8 changed its equidistant
     cylindrical projection.

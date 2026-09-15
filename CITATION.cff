@@ -1,0 +1,50 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "AIDAS: Argonne AI-Driven Adaptive Sampling System"
+abbreviation: AIDAS
+abstract: >-
+  AIDAS is a Python package for AI-guided instrument tasking over the Argonne
+  Testbed for Multiscale Observational Studies (ATMOS). It detects mesoscale
+  boundaries, such as lake breeze fronts, in NEXRAD radar data using deep
+  learning models, and uses those detections to cue the scan strategy of
+  ground-based instruments including Halo Photonics Doppler lidars.
+authors:
+  - family-names: Jackson
+    given-names: Robert Clyde
+    affiliation: Argonne National Laboratory
+    email: rjackson@anl.gov
+  - family-names: Raut
+    given-names: Bhupendra
+    affiliation: Argonne National Laboratory
+    email: braut@anl.gov
+  - family-names: Park
+    given-names: Seongha
+    affiliation: Argonne National Laboratory
+    email: seongha.park@anl.gov
+  - family-names: Arcomano
+    given-names: Troy
+    affiliation: Argonne National Laboratory
+  - family-names: Collis
+    given-names: Scott
+    affiliation: Argonne National Laboratory
+version: 0.6.0
+license: BSD-3-Clause
+repository-code: "https://github.com/rcjackson/AIDAS"
+url: "https://rcjackson.github.io/AIDAS/"
+keywords:
+  - adaptive sampling
+  - weather radar
+  - Doppler lidar
+  - NEXRAD
+  - lake breeze
+  - deep learning
+  - instrument tasking
+# This software was released on PyPI as `adam-atmos` (ATMOS Analogue Digital
+# Twin, ADAM) through version 0.5.0, and as `aidas-atmos` from 0.6.0 onward.
+#
+# If a DOI is minted for this project (for example via Zenodo), add it here:
+# identifiers:
+#   - type: doi
+#     value: 10.5281/zenodo.XXXXXXX
+#     description: Concept DOI for all versions

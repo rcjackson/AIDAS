@@ -2,10 +2,25 @@
 History
 =======
 
+0.6.0 (unreleased)
+------------------
+
+* Renamed the project to the Argonne AI-Driven Adaptive Sampling System (AIDAS).
+  The import package is now ``aidas`` (previously ``adam``) and the distribution
+  is now ``aidas-atmos`` on PyPI (previously ``adam-atmos``).
+* ``adam-atmos`` is deprecated. A final transitional release forwards
+  ``import adam`` to ``aidas`` with a ``DeprecationWarning``; see
+  ``compat/adam-atmos/``.
+* Replaced the "digital twin" framing in the project description with adaptive
+  sampling / instrument tasking, which describes what the system actually does.
+* Added :func:`aidas.util.aeqd_to_lonlat` and compute radar gate geolocation
+  directly rather than delegating to PROJ, fixing a unit test regression across
+  pyproj versions.
+
 0.5.0 (2026-03-19)
 ------------------
 
-* Added :func:`adam.util.azimuth_from_ellipse` for deriving the instrument
+* Added :func:`aidas.util.azimuth_from_ellipse` for deriving the instrument
   pointing direction from an ellipse fitted to the lake breeze mask.
 * Added unit tests covering the new azimuth utilities.
 * Expanded the notebook documentation.
@@ -13,9 +28,9 @@ History
 0.4.0 (2026-02-09)
 ------------------
 
-* Added the :mod:`adam.triggering` module with adaptive scanning support for
+* Added the :mod:`aidas.triggering` module with adaptive scanning support for
   Halo Photonics lidars.
-* Added the :mod:`adam.testing` module, including a reference test dataset and
+* Added the :mod:`aidas.testing` module, including a reference test dataset and
   fake SSH/SFTP clients for exercising scan triggering without hardware.
 * Added docstrings and documented references for the testing and triggering
   modules.
@@ -32,7 +47,7 @@ History
 0.2.0 (2025-09-08)
 ------------------
 
-* Added :func:`adam.util.azimuth_point` to determine the optimal instrument
+* Added :func:`aidas.util.azimuth_point` to determine the optimal instrument
   pointing direction for adaptive scanning.
 * Added unit tests for instrument pointing.
 * Published the documentation to GitHub Pages.

@@ -79,8 +79,8 @@ def assert_scan_files_match(actual_path, expected_path,
 
 
 def test_make_scan_file():
-    from adam.triggering.halo_lidar import make_scan_file
-    from adam.testing import TEST_RHI_FILE, TEST_PPI_FILE
+    from aidas.triggering.halo_lidar import make_scan_file
+    from aidas.testing import TEST_RHI_FILE, TEST_PPI_FILE
     elevations = [0, 90]
     azimuths = [90]
     out_file_name = 'test_scan_rhi.txt'
@@ -110,9 +110,9 @@ def test_make_scan_file():
         assert line == expected_line, f"Line {i} does not match expected output.\nGot: {line}\nExpected: {expected_line}"
 
 def test_send_scan():
-    from adam.triggering.halo_lidar import send_scan
-    from adam.testing import TEST_RHI_FILE
-    from adam.testing.fake_lidar import FakeSSHClient
+    from aidas.triggering.halo_lidar import send_scan
+    from aidas.testing import TEST_RHI_FILE
+    from aidas.testing.fake_lidar import FakeSSHClient
     lidar_ip_addr = None
     lidar_uname = None
     lidar_pwd = None
@@ -132,55 +132,55 @@ def test_send_scan():
 
 def test_trigger_lidar_ppis_from_mask():
     import torch
-    import adam
+    import aidas
     torch.manual_seed(42)
-    rad_scan = adam.io.preprocess_radar_image('KLOT', '2025-07-15T18:00:00')
-    rad_scan = adam.model.infer_lake_breeze(
+    rad_scan = aidas.io.preprocess_radar_image('KLOT', '2025-07-15T18:00:00')
+    rad_scan = aidas.model.infer_lake_breeze(
         rad_scan, model_name='lakebreeze_best_model_fcn_resnet50')
-    result = adam.triggering.trigger_lidar_ppis_from_mask(rad_scan, 41.70101404798476, -87.99577278662817,
+    result = aidas.triggering.trigger_lidar_ppis_from_mask(rad_scan, 41.70101404798476, -87.99577278662817,
                                                   None, None, None, elevations=[0, 5, 10], az_width=30.,  
                                                   out_file_name='test_scan_ppi_lakebreeze.txt', dyn_csm=False)
     assert result is False, "Expected the scan to not be triggered due to distance from lidar to lake breeze region being greater than max_distance."
 
-    rad_scan = adam.io.preprocess_radar_image('KLOT', '2025-04-24T20:03:23')
-    rad_scan = adam.model.infer_lake_breeze(
+    rad_scan = aidas.io.preprocess_radar_image('KLOT', '2025-04-24T20:03:23')
+    rad_scan = aidas.model.infer_lake_breeze(
         rad_scan, model_name='lakebreeze_model_fcn_resnet50_no_augmentation')
-    with adam.testing.FakeSSHClient() as client:
-        result = adam.triggering.trigger_lidar_ppis_from_mask(
+    with aidas.testing.FakeSSHClient() as client:
+        result = aidas.triggering.trigger_lidar_ppis_from_mask(
             rad_scan, 41.70101404798476, -87.99577278662817,
             None, None, None, elevations=[0, 5, 10], az_width=30., 
             out_file_name='test_scan_ppi_lakebreeze_close.txt', dyn_csm=False, client=client)
         assert result is True, "Expected the scan to be triggered since the distance from lidar to lake breeze region is less than max_distance."
         client.sftp.get(client.sftp.files[0], 'test_scan_ppi_lakebreeze_close_copy.txt')
         assert_scan_files_match('test_scan_ppi_lakebreeze_close_copy.txt',
-                                adam.testing.TEST_PPI_TRIGGERED_SCAN)
+                                aidas.testing.TEST_PPI_TRIGGERED_SCAN)
     os.remove('test_scan_ppi_lakebreeze_close_copy.txt')
     os.remove('test_scan_ppi_lakebreeze_close.txt')
     os.remove('test_scan_ppi.txt')
 
 def test_trigger_lidar_rhi_from_mask():
     import torch
-    import adam
+    import aidas
     torch.manual_seed(42)
-    rad_scan = adam.io.preprocess_radar_image('KLOT', '2025-07-15T18:00:00')
-    rad_scan = adam.model.infer_lake_breeze(
+    rad_scan = aidas.io.preprocess_radar_image('KLOT', '2025-07-15T18:00:00')
+    rad_scan = aidas.model.infer_lake_breeze(
         rad_scan, model_name='lakebreeze_best_model_fcn_resnet50')
-    result = adam.triggering.trigger_lidar_rhi_from_mask(rad_scan, 41.70101404798476, -87.99577278662817,
+    result = aidas.triggering.trigger_lidar_rhi_from_mask(rad_scan, 41.70101404798476, -87.99577278662817,
                                                   None, None, None, elevations=[0, 45],   
                                                   out_file_name='test_scan_rhi_lakebreeze.txt', dyn_csm=False)
     assert result is False, "Expected the scan to not be triggered due to distance from lidar to lake breeze region being greater than max_distance."
-    rad_scan = adam.io.preprocess_radar_image('KLOT', '2025-04-24T20:03:23')
-    rad_scan = adam.model.infer_lake_breeze(
+    rad_scan = aidas.io.preprocess_radar_image('KLOT', '2025-04-24T20:03:23')
+    rad_scan = aidas.model.infer_lake_breeze(
         rad_scan, model_name='lakebreeze_model_fcn_resnet50_no_augmentation')
-    with adam.testing.FakeSSHClient() as client:
-        result = adam.triggering.trigger_lidar_rhi_from_mask(rad_scan, 41.70101404798476, -87.99577278662817,
+    with aidas.testing.FakeSSHClient() as client:
+        result = aidas.triggering.trigger_lidar_rhi_from_mask(rad_scan, 41.70101404798476, -87.99577278662817,
                                                   None, None, None, elevations=[0, 45],   
                                                   out_file_name='test_scan_rhi_lakebreeze.txt', dyn_csm=False, client=client)
         assert result is True, "Expected the scan to be triggered since the distance from lidar to lake breeze region" \
              " is less than max_distance."
         client.sftp.get(client.sftp.files[0], 'test_scan_rhi_lakebreeze_copy.txt')
         assert_scan_files_match('test_scan_rhi_lakebreeze_copy.txt',
-                                adam.testing.TEST_RHI_TRIGGERED_SCAN)
+                                aidas.testing.TEST_RHI_TRIGGERED_SCAN)
     os.remove('test_scan_rhi_lakebreeze_copy.txt')
     os.remove('test_scan_rhi_lakebreeze.txt')
     os.remove('test_scan_rhi.txt')

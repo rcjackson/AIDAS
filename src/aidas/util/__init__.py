@@ -1,11 +1,11 @@
 """
 ===============================================
-ADAM Utility Functions (:mod:`adam.util`)
+AIDAS Utility Functions (:mod:`aidas.util`)
 =============================================== 
 
-.. currentmodule:: adam.util
+.. currentmodule:: aidas.util
 
-This module contains utility functions for the ADAM package.
+This module contains utility functions for the AIDAS package.
 
 .. autosummary::
     :toctree: generated/

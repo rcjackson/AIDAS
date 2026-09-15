@@ -1,8 +1,8 @@
 """ 
 ==============================
-ADAM Triggering Module
+AIDAS Triggering Module
 ==============================
-.. currentmodule:: adam.triggering
+.. currentmodule:: aidas.triggering
 
 This module handles the generation of scan strategies and triggering of the lidar based on radar data.
 

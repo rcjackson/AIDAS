@@ -1,4 +1,4 @@
-"""Top-level package for ATMOS Analogue Digital Twin."""
+"""Top-level package for Argonne AI-Driven Adaptive Sampling System."""
 
 
 __version__ = '0.6.0'

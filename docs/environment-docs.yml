@@ -1,4 +1,4 @@
-name: adam-docs
+name: aidas-docs
 channels:
   - conda-forge
   - defaults

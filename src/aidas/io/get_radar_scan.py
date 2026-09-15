@@ -22,7 +22,7 @@ def _render_model_input(radar, lat_range, lon_range):
     Rasterise the lowest reflectivity sweep into the 256x256 image the
     lake-breeze model expects.
 
-    The gate geolocation is computed by :func:`adam.util.aeqd_to_lonlat` and the
+    The gate geolocation is computed by :func:`aidas.util.aeqd_to_lonlat` and the
     figure is drawn on a plain Matplotlib axes rather than a Cartopy GeoAxes.
     Longitude and latitude are the axes coordinates directly, which is what a
     plate carree map is, so the picture is unchanged -- but nothing in the path
@@ -191,14 +191,14 @@ def preprocess_radar_image(radar, rad_time=None, lat_range=(41.1280, 42.5680),
                            bucket_name='unidata-nexrad-level2'):
     """
     This module will preprocess the NEXRAD radar data for inference into the lake-breeze
-    prediction model of ADAM.
+    prediction model of AIDAS.
 
     Parameters
     ----------
     radar: str or :py:meth:`pyart.core.radar` object
         The 4-letter code for the radar to obtain the scan from. For Chicago, use KLOT.
     rad_time: ISO-format datestring
-        The date/time string in YYYY-MM-DDTHH:MM:SS format for the radar scan. If None, then ADAM will
+        The date/time string in YYYY-MM-DDTHH:MM:SS format for the radar scan. If None, then AIDAS will
         get the latest scan. This is not used if radar is a :py:meth:`pyart.core.radar` object or string.
     lat_range: 2-tuple of floats
         The minimum and maximum latitude of the domain in degrees. Default is a centered
@@ -211,7 +211,7 @@ def preprocess_radar_image(radar, rad_time=None, lat_range=(41.1280, 42.5680),
 
     Returns
     -------
-    image: :py:meth:`adam.io.RadarImage`
+    image: :py:meth:`aidas.io.RadarImage`
         The :py:meth:`RadarImage` object containing the radar scan, pre-processed image,
         and grid.
     """
@@ -279,7 +279,7 @@ def preprocess_radar_image_batch(file, lat_range=(41.1280, 42.5680),
                            lon_range=(-88.7176, -87.2873), parallel=False):
     """
     This module will preprocess the NEXRAD radar data for inference into the lake-breeze
-    prediction model of ADAM.
+    prediction model of AIDAS.
 
     Parameters
     ----------
@@ -296,7 +296,7 @@ def preprocess_radar_image_batch(file, lat_range=(41.1280, 42.5680),
 
     Returns
     -------
-    image: :py:meth:`adam.io.RadarImage`
+    image: :py:meth:`aidas.io.RadarImage`
         The :py:meth:`RadarImage` object containing the radar scan, pre-processed image,
         and grid.
     """

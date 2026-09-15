@@ -3,19 +3,19 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-import adam
+import aidas
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'ADAM'
+project = 'AIDAS'
 copyright = '2025-2026, Robert Jackson, Seongha Park'
 author = 'Robert Jackson, Seongha Park'
 
 # The short X.Y version.
-version = adam.__version__
+version = aidas.__version__
 # The full version, including alpha/beta/rc tags.
-release = adam.__version__
+release = aidas.__version__
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

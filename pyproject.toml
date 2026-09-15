@@ -3,8 +3,8 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "adam-atmos"
-description = "A proof of concept for a digital twin for the Argonne Testbed for Multiscale Observational Studies. This initial package contains a model that determines the lakebreeze front location from the 0.5 degree scan of the NEXRAD radar."
+name = "aidas-atmos"
+description = "AI-guided adaptive sampling for the Argonne Testbed for Multiscale Observational Studies (ATMOS): detect mesoscale boundaries in NEXRAD radar data and cue ground-based instruments from the result."
 readme = "README.rst"
 authors = [
   {name = "Robert Clyde Jackson", email = "rjackson@anl.gov"}
@@ -41,9 +41,11 @@ dev = [
 
 [project.urls]
 
-bugs = "https://github.com/rcjackson/adam/issues"
-changelog = "https://github.com/rcjackson/adam/blob/master/changelog.md"
-homepage = "https://github.com/rcjackson/adam"
+bugs = "https://github.com/rcjackson/AIDAS/issues"
+changelog = "https://rcjackson.github.io/AIDAS/history.html"
+documentation = "https://rcjackson.github.io/AIDAS/"
+homepage = "https://github.com/rcjackson/AIDAS"
+repository = "https://github.com/rcjackson/AIDAS"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
@@ -53,13 +55,16 @@ package-dir = {"" = "src"}
 
 
 [tool.setuptools.dynamic]
-version = {attr = "adam.__version__"}
+version = {attr = "aidas.__version__"}
 
 # Mypy
 # ----
 
 [tool.mypy]
 files = "."
+# The compat/ tree is a standalone shim project for the deprecated adam-atmos
+# distribution; it is built and published separately, not type-checked here.
+exclude = ["^compat/"]
 
 # Use strict defaults
 strict = true

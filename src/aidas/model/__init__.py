@@ -1,9 +1,9 @@
 """
 ============================
-adam.model (adam.model)
+aidas.model (aidas.model)
 ============================
 
-.. currentmodule:: adam.model
+.. currentmodule:: aidas.model
 
 This module handles the inference of lake breeze location from radar data.
 
