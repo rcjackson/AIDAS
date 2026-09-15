@@ -1,5 +1,5 @@
 Welcome to Argonne AI-Driven Adaptive Sampling System (AIDAS)'s documentation!
-==============================================================
+==============================================================================
 
 .. grid:: 1 2 2 2
     :gutter: 2
