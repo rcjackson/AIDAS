@@ -13,6 +13,9 @@ History
   ``compat/adam-atmos/``.
 * Replaced the "digital twin" framing in the project description with adaptive
   sampling / instrument tasking, which describes what the system actually does.
+* Added :func:`aidas.util.aeqd_to_lonlat` and compute radar gate geolocation
+  directly rather than delegating to PROJ, fixing a unit test regression across
+  pyproj versions.
 
 0.5.0 (2026-03-19)
 ------------------
