@@ -137,9 +137,9 @@ def send_scan(file_name, lidar_ip_addr, lidar_uname, lidar_pwd, out_file_name='u
 
 def trigger_lidar_ppis_from_mask(rad_scan, lidar_lat, lidar_lon, lidar_ip_addr, lidar_uname, lidar_pwd, elevations, 
                                  az_width=30., out_file_name='user.txt', dyn_csm=False,
-                                 max_distance=5000, client=None):
+                                 max_distance=5000, client=None, mask='lakebreeze'):
     """
-    Triggers a PPI scan on the lidar using a scan strategy generated from a lake breeze mask.
+    Triggers a PPI scan on the lidar using a scan strategy generated from a detection mask.
 
     Parameters
     ----------
@@ -168,16 +168,19 @@ def trigger_lidar_ppis_from_mask(rad_scan, lidar_lat, lidar_lon, lidar_ip_addr, 
     client: paramiko.SSHClient, optional
         An optional SSH client to use for the connection. If not provided, a new client will be created
         and closed within the send_scan function.
+    mask: str
+        Which detection mask to steer from: 'lakebreeze' or 'velocity_wave'. See
+        :func:`aidas.util.azimuth_point`.
     
     Returns
     -------
     bool
         Returns True if the scan was triggered, and False if the scan was not triggered due to the distance from the lidar
-        to the lake breeze region being greater than max_distance.
+        to the detected region being greater than max_distance.
     """
-    middle_azimuth, lat, lon, dist = azimuth_point(lidar_lon, lidar_lat, rad_scan)
+    middle_azimuth, lat, lon, dist = azimuth_point(lidar_lon, lidar_lat, rad_scan, mask=mask)
     if dist > max_distance:  # If the distance is greater than max_distance, don't trigger the scan
-        logging.info(f"Distance from lidar to lake breeze region is {dist} meters. Not triggering scan.")
+        logging.info(f"Distance from lidar to the detected region is {dist} meters. Not triggering scan.")
         return False
     azimuths = np.array([middle_azimuth - az_width/2, middle_azimuth + az_width/2])
 
@@ -188,9 +191,10 @@ def trigger_lidar_ppis_from_mask(rad_scan, lidar_lat, lidar_lon, lidar_ip_addr, 
 
 
 def trigger_lidar_rhi_from_mask(rad_scan, lidar_lat, lidar_lon, lidar_ip_addr, lidar_uname, lidar_pwd, elevations, 
-                                out_file_name='user.txt', dyn_csm=False, max_distance=5000, client=None):
+                                out_file_name='user.txt', dyn_csm=False, max_distance=5000, client=None,
+                                mask='lakebreeze'):
     """
-    Triggers a PPI scan on the lidar using a scan strategy generated from a lake breeze mask.
+    Triggers an RHI scan on the lidar using a scan strategy generated from a detection mask.
 
     Parameters
     ----------
@@ -223,16 +227,19 @@ def trigger_lidar_rhi_from_mask(rad_scan, lidar_lat, lidar_lon, lidar_ip_addr, l
     client: paramiko.SSHClient, optional
         An optional SSH client to use for the connection. If not provided, a new client will be created
         and closed within the send_scan function.
+    mask: str
+        Which detection mask to steer from: 'lakebreeze' or 'velocity_wave'. See
+        :func:`aidas.util.azimuth_point`.
     
     Returns
     -------
     bool
         Returns True if the scan was triggered, and False if the scan was not triggered due to
-        the distance from the lidar to the lake breeze region being greater than max_distance.
+        the distance from the lidar to the detected region being greater than max_distance.
     """
-    middle_azimuth, lat, lon, dist = azimuth_point(lidar_lon, lidar_lat, rad_scan)
+    middle_azimuth, lat, lon, dist = azimuth_point(lidar_lon, lidar_lat, rad_scan, mask=mask)
     if dist > max_distance:  # If the distance is greater than max_distance, don't trigger the scan
-        logging.info(f"Distance from lidar to lake breeze region is {dist} meters. Not triggering scan.")
+        logging.info(f"Distance from lidar to the detected region is {dist} meters. Not triggering scan.")
         return False
     azimuths = [middle_azimuth]
 

@@ -5,6 +5,27 @@ History
 0.6.0 (unreleased)
 ------------------
 
+* Added :func:`aidas.model.detect_velocity_waves`, which detects radial velocity
+  wave signatures by differencing two consecutive radar volumes following
+  Miller et al. (2022, https://doi.org/10.5194/amt-15-1689-2022). The negative half
+  of the velocity change is thresholded, regridded onto a 0.5 km Cartesian grid and
+  area filtered into a binary mask.
+* Added :func:`aidas.vis.visualize_velocity_waves`, which draws the mask in a panel
+  of its own beside the velocity it was detected from. That velocity is the
+  dealiased, quality controlled sweep, kept on the :py:meth:`RadarImage` as
+  ``wave_sweep_radar``, rather than the raw folded field in the original volume.
+  :func:`aidas.vis.plot_velocity_wave_mask` draws just the mask, for comparing
+  detections made with different settings side by side.
+* Added :func:`aidas.io.get_previous_scan`, which fetches the volume collected
+  immediately before a given scan. The S3 listing behind it now skips the ``_MDM``
+  metadata files, which share a timestamp with their volume but hold no radar data,
+  and recognises the older ``_V03.gz`` volume names.
+* :func:`aidas.util.azimuth_point`, :func:`aidas.util.azimuth_from_ellipse` and the
+  lidar triggering functions take a ``mask`` argument, so an instrument can be cued
+  at a detected wave train as well as at the lake breeze. The default is unchanged.
+* Fixed :func:`aidas.io.preprocess_radar_image` overwriting its own ``radar`` and
+  ``bucket_name`` arguments, which made it fetch KLOT from the Unidata bucket
+  whatever the caller asked for.
 * Renamed the project to the Argonne AI-Driven Adaptive Sampling System (AIDAS).
   The import package is now ``aidas`` (previously ``adam``) and the distribution
   is now ``aidas-atmos`` on PyPI (previously ``adam-atmos``).

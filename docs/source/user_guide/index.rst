@@ -12,3 +12,4 @@ Finally, we will demonstrate how to process a batch of radar files.
    overview.rst
    read_radar_data.rst
    show_me_the_lakebreeze.rst
+   velocity_waves.rst
