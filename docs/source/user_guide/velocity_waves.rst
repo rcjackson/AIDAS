@@ -13,17 +13,29 @@ alternating velocity change. AIDAS keeps the negative half of that difference, w
 marks the upstream convergence and the ascent implied with it, and turns it into a
 binary mask.
 
+Before any of that, each sweep is quality controlled as the paper describes: gates
+with reflectivity below 0 dBZ are discarded, speckles are removed, and the velocities
+are **dealiased** with Py-ART's region-based unfolding. The dealiasing is not
+optional in spirit. A fold is a jump of twice the Nyquist velocity, so an unfolded
+field is full of apparent velocity changes of 50 m s\ :sup:`-1` or more sitting
+along the fold edges, and those would be detected in place of the waves. On the 2010
+case below, roughly a fifth of the gates need unfolding, which takes the field from
+the ±26 m s\ :sup:`-1` the radar reports out to −65 to 74 m s\ :sup:`-1`.
+
 Running the detector
 --------------------
 
 The detector needs two scans. If you only give it one, it fetches the volume before
-it for you:
+it for you. The case the paper demonstrates the method with is KOKX at Upton, New
+York, late on 26 December 2010, with a low centre a couple of hundred kilometres to
+the southeast:
 
 .. code-block:: python
 
     import aidas
 
-    rad_scan = aidas.model.detect_velocity_waves('KLOT', rad_time='2025-07-15T18:13:45')
+    rad_scan = aidas.model.detect_velocity_waves(
+        'KOKX', rad_time='2010-12-26T23:45:15', max_range=137000.)
 
 You can also hand it both scans yourself, as Py-ART radar objects, file paths, or a
 :py:meth:`RadarImage` you have already preprocessed:
@@ -33,29 +45,17 @@ You can also hand it both scans yourself, as Py-ART radar objects, file paths, o
     rad_scan = aidas.model.detect_velocity_waves(later_scan, earlier_scan)
 
 The result carries ``velocity_wave_mask``, where 1 marks a detection, along with the
-grid it sits on in ``wave_grid_lat`` and ``wave_grid_lon``, and the two scan times
-that were differenced in ``wave_scan_times``. Note that the wave mask lives on its
-own Cartesian grid centred on the radar, at 0.5 km spacing by default, rather than on
-the 256 by 256 domain grid the lake breeze mask uses.
+grid it sits on in ``wave_grid_lat`` and ``wave_grid_lon``, and the two sweep times
+that were differenced in ``wave_scan_times`` -- here 23:40:00 and 23:45:48, the pair
+the paper works from. Note that the wave mask lives on its own Cartesian grid centred
+on the radar, at 0.5 km spacing by default, rather than on the 256 by 256 domain grid
+the lake breeze mask uses.
 
 To see it:
 
 .. code-block:: python
 
     aidas.vis.visualize_velocity_waves(rad_scan)
-
-That particular example is a fair weather afternoon over Chicago rather than a wave
-event, and the mask comes back nearly empty, which is the right answer. The clear-air
-velocity field near the radar is noisy and the area filter throws nearly all of that
-noise away; what survives sits in the precipitation to the south, as a handful of
-convergence lines.
-
-The case from the paper
------------------------
-
-For a case with waves in it, here is the one the paper demonstrates the method with:
-KOKX at Upton, New York, late on 26 December 2010, with a low centre a couple of
-hundred kilometres to the southeast.
 
 .. plot::
 
@@ -64,10 +64,22 @@ hundred kilometres to the southeast.
 
     rad_scan = aidas.model.detect_velocity_waves(
         'KOKX', rad_time='2010-12-26T23:45:15', max_range=137000.)
-    fig, ax = aidas.vis.visualize_velocity_waves(rad_scan, vmin=-25, vmax=25)
+    fig, axes = aidas.vis.visualize_velocity_waves(rad_scan)
     plt.show()
 
-Taking a two dimensional Fourier transform of the mask puts the dominant sets at
+The mask is drawn in a panel of its own rather than as a contour over the velocity,
+because band spacing and orientation are much easier to read that way. Beside it is
+the velocity the detection actually worked from -- the dealiased, quality controlled
+sweep held in ``wave_sweep_radar``, not the raw folded field in the original volume,
+so the two panels agree with one another. Its colour scale runs past the Nyquist
+velocity for the same reason. Pass ``overlay=True`` to outline the mask on the
+velocity panel as well, which is the quick way to check that detections sit on the
+bands they came from.
+
+Checking the result against the paper
+-------------------------------------
+
+Taking a two dimensional Fourier transform of that mask puts the dominant sets at
 wavelengths of 14 to 19 km with their long axes running 28 to 39 degrees, SSW to NNE,
 and the wave train moving off to the northwest. The paper reports wavelengths on the
 order of 12 to 18 km with SSW to NNE axes for the same case. Several roughly parallel
@@ -84,7 +96,7 @@ The defaults are the WSR-88D values from the paper: flag velocity changes below
 .. code-block:: python
 
     rad_scan = aidas.model.detect_velocity_waves(
-        'KLOT', rad_time='2025-07-15T18:13:45',
+        'KOKX', rad_time='2010-12-26T23:45:15',
         velocity_threshold=-1.0, grid_spacing=500., min_area=16.)
 
 Of the three, ``min_area`` is the one worth thinking about. Waves exist at many
@@ -142,7 +154,7 @@ The pointing utilities take the wave mask as readily as the lake breeze mask:
 .. code-block:: python
 
     angle, lat, lon, dist = aidas.util.azimuth_point(
-        atmos_lon, atmos_lat, rad_scan, mask='velocity_wave')
+        instrument_lon, instrument_lat, rad_scan, mask='velocity_wave')
 
 :func:`aidas.util.azimuth_from_ellipse` is often the better choice here, since a wave
 train of parallel bands fits an ellipse far more naturally than a single front does,

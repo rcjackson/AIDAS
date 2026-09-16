@@ -122,6 +122,10 @@ class RadarImage(object):
         The index of the sweep of ``pyart_object`` the wave mask was made from. On a
         NEXRAD split cut this is the Doppler cut, which is not the first sweep at
         that elevation.
+    wave_sweep_radar: :py:meth:`pyart.core.Radar`
+        That sweep on its own, holding the velocity the mask was computed from:
+        censored, despeckled and dealiased. It is a copy, so the volume in
+        ``pyart_object`` still holds the raw folded velocities.
     """
     pyart_object = None
     lat_range = None
@@ -139,6 +143,7 @@ class RadarImage(object):
     wave_grid_lon = None
     wave_scan_times = None
     wave_sweep = None
+    wave_sweep_radar = None
     
     def __getitem__(self, key):
         """

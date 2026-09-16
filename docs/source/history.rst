@@ -10,8 +10,10 @@ History
   Miller et al. (2022, https://doi.org/10.5194/amt-15-1689-2022). The negative half
   of the velocity change is thresholded, regridded onto a 0.5 km Cartesian grid and
   area filtered into a binary mask.
-* Added :func:`aidas.vis.visualize_velocity_waves` for plotting that mask over the
-  velocity field it came from.
+* Added :func:`aidas.vis.visualize_velocity_waves`, which draws the mask in a panel
+  of its own beside the velocity it was detected from. That velocity is the
+  dealiased, quality controlled sweep, kept on the :py:meth:`RadarImage` as
+  ``wave_sweep_radar``, rather than the raw folded field in the original volume.
 * Added :func:`aidas.io.get_previous_scan`, which fetches the volume collected
   immediately before a given scan. The S3 listing behind it now skips the ``_MDM``
   metadata files, which share a timestamp with their volume but hold no radar data,

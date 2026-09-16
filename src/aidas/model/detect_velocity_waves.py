@@ -189,8 +189,9 @@ def _prepare_sweep(radar, elevation, reflectivity_threshold=0.0, dealias=True,
     -------
     sweep: dict
         The prepared ``velocity`` (a masked nrays by ngates array), ``azimuth``,
-        mean ``elevation``, ``range``, volume ``time``, and the index of the
-        ``sweep`` it was taken from.
+        mean ``elevation``, ``range``, volume ``time``, the index of the ``sweep``
+        it was taken from, and the single-sweep ``radar`` holding the prepared
+        velocity field.
     """
     sweep = _select_doppler_sweep(radar, elevation, vel_field=vel_field)
     sweep_radar = radar.extract_sweeps([sweep])
@@ -224,12 +225,19 @@ def _prepare_sweep(radar, elevation, reflectivity_threshold=0.0, dealias=True,
         velocity = np.ma.masked_array(sweep_radar.fields[vel_field]['data'])
     velocity = np.ma.masked_where(gatefilter.gate_excluded, velocity)
 
+    # Put the censored, dealiased velocity back into the sweep. sweep_radar is a
+    # copy, so the caller's volume is untouched, and keeping it means what gets
+    # plotted later is the field the mask was actually computed from rather than
+    # the raw folded one.
+    sweep_radar.fields[vel_field]['data'] = velocity
+
     return {'velocity': velocity,
             'azimuth': np.asarray(sweep_radar.azimuth['data'], dtype=float) % 360.0,
             'elevation': float(np.mean(sweep_radar.elevation['data'])),
             'range': np.asarray(sweep_radar.range['data'], dtype=float),
             'time': _sweep_time(sweep_radar),
-            'sweep': sweep}
+            'sweep': sweep,
+            'radar': sweep_radar}
 
 
 def _nearest_azimuth_index(target_az, source_az, tolerance=1.0):
@@ -459,8 +467,9 @@ def detect_velocity_waves(radar_scan, previous_scan=None, rad_time=None, elevati
     Returns
     -------
     radar_scan: :py:meth:`aidas.io.RadarImage`
-        The :py:meth:`RadarImage` with ``velocity_wave_mask`` and the grid it lives
-        on set. A new :py:meth:`RadarImage` is made if one was not passed in.
+        The :py:meth:`RadarImage` with ``velocity_wave_mask``, the grid it lives on,
+        and ``wave_sweep_radar``, the quality controlled and dealiased sweep the mask
+        was made from. A new :py:meth:`RadarImage` is made if one was not passed in.
 
     References
     ----------
@@ -517,6 +526,7 @@ def detect_velocity_waves(radar_scan, previous_scan=None, rad_time=None, elevati
     rad_image.wave_grid_lon = lon
     rad_image.wave_scan_times = (previous['time'], current['time'])
     rad_image.wave_sweep = current['sweep']
+    rad_image.wave_sweep_radar = current['radar']
     if rad_image.pyart_object is None:
         rad_image.pyart_object = current_radar
     if rad_image.times is None:

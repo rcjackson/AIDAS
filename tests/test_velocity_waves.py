@@ -28,7 +28,8 @@ NGATES = 200
 
 def _synthetic_volume(shift_km=0.0, start_az=0.0, amplitude=3.0, background=10.0,
                       wavelength_km=WAVELENGTH_KM, nrays=360,
-                      scan_time='2025-07-15T18:00:00', split_cut=True):
+                      scan_time='2025-07-15T18:00:00', split_cut=True, nyquist=40.0,
+                      fold=False):
     """
     Build a PPI volume carrying a plane wave in radial velocity.
 
@@ -55,11 +56,14 @@ def _synthetic_volume(shift_km=0.0, start_az=0.0, amplitude=3.0, background=10.0
     radar.longitude['data'] = np.array([-88.0])
     radar.altitude['data'] = np.array([200.0])
     radar.time['units'] = f'seconds since {scan_time}Z'
-    radar.instrument_parameters = {'nyquist_velocity': {'data': np.full(2 * nrays, 40.0)}}
+    radar.instrument_parameters = {'nyquist_velocity': {'data': np.full(2 * nrays, nyquist)}}
 
     east = radar.range['data'][np.newaxis, :] * np.sin(np.radians(azimuth))[:, np.newaxis]
     wave = background + amplitude * np.sin(
         2 * np.pi * (east / 1000.0 - shift_km) / wavelength_km)
+    if fold:
+        # Wrap the velocities into the Nyquist interval, as the radar itself would.
+        wave = ((wave + nyquist) % (2 * nyquist)) - nyquist
 
     velocity = np.ma.masked_array(np.concatenate([wave, wave]),
                                   mask=np.zeros((2 * nrays, NGATES), dtype=bool))
@@ -420,9 +424,64 @@ def test_volume_listing_skips_metadata_files():
 
 @pytest.mark.mpl_image_compare(tolerance=50)
 def test_visualize_velocity_waves():
+    """The mask gets a panel of its own, beside the velocity it came from."""
     current, previous = _wave_pair()
     scan = aidas.model.detect_velocity_waves(current, previous, dealias=False)
-    fig, ax = aidas.vis.visualize_velocity_waves(scan)
+    fig, axes = aidas.vis.visualize_velocity_waves(scan)
     assert fig is not None
-    assert ax is not None
+    assert len(axes) == 2
+    assert 'Wave mask' in axes[1].get_title()
     return fig
+
+
+def test_the_plotted_velocity_is_the_one_detected_from():
+    """
+    The sweep kept for plotting holds the field the mask was computed from.
+
+    It has to be the dealiased, censored velocity rather than the raw folded field
+    in the original volume, or the picture and the mask would disagree.
+    """
+    current, previous = _wave_pair()
+    scan = aidas.model.detect_velocity_waves(current, previous, dealias=False,
+                                             reflectivity_threshold=None)
+
+    assert scan.wave_sweep_radar is not None
+    assert scan.wave_sweep_radar.nsweeps == 1
+    kept = scan.wave_sweep_radar.fields['velocity']['data']
+    # The Doppler cut of the original volume, which is sweep 1 of a split cut.
+    original = current.extract_sweeps([scan.wave_sweep]).fields['velocity']['data']
+    np.testing.assert_allclose(np.ma.compressed(kept), np.ma.compressed(original))
+
+    # The caller's volume still holds every sweep, untouched.
+    assert current.nsweeps == 2
+
+
+def test_velocity_is_dealiased_before_the_mask_is_made():
+    """
+    Folded velocities are unfolded first, as the paper specifies.
+
+    The wave here swings further than the Nyquist velocity, so the radar folds it
+    and the fold edges become huge apparent velocity changes. Detecting on the
+    folded field would mark those edges instead of the wave.
+    """
+    kwargs = dict(amplitude=12.0, background=0.0, nyquist=5.0)
+    folded_current, folded_previous = _wave_pair(fold=True, **kwargs)
+    true_current, true_previous = _wave_pair(fold=False, **kwargs)
+
+    folded = folded_current.extract_sweeps([1]).fields['velocity']['data']
+    assert np.abs(folded).max() <= 5.0, "the test data should be folded to start with"
+
+    dealiased = aidas.model.detect_velocity_waves(folded_current, folded_previous,
+                                                  dealias=True)
+    kept = dealiased.wave_sweep_radar.fields['velocity']['data']
+    assert np.abs(kept).max() > 5.0, "the velocities were never unfolded"
+
+    # Detecting on the unfolded field recovers the same bands as detecting on the
+    # field that was never folded; leaving it folded does not.
+    truth = aidas.model.detect_velocity_waves(true_current, true_previous, dealias=False)
+    still_folded = aidas.model.detect_velocity_waves(folded_current, folded_previous,
+                                                     dealias=False)
+    agreement = (dealiased.velocity_wave_mask == truth.velocity_wave_mask).mean()
+    folded_agreement = (still_folded.velocity_wave_mask == truth.velocity_wave_mask).mean()
+    assert agreement > folded_agreement, (
+        f"dealiasing did not help: {agreement:.3f} against {folded_agreement:.3f}")
