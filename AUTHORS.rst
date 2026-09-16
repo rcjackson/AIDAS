@@ -9,6 +9,7 @@ Development Lead
 * Seongha Park <seongha.park@anl.gov>
 * Bhupendra Raut <braut@anl.gov>
 * Troy Arcomano
+* Scott Collis
 
 Contributors
 ------------
