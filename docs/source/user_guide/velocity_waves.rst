@@ -101,9 +101,52 @@ The defaults are the WSR-88D values from the paper: flag velocity changes below
 
 Of the three, ``min_area`` is the one worth thinking about. Waves exist at many
 scales at once, so the area filter is not only removing noise -- it is choosing which
-wave scale you see. Raising it emphasises longer waves. The paper reports that the
-result is not very sensitive to the exact velocity threshold for high-amplitude
-waves, and thresholds for other instruments should scale with their noise floor.
+wave scale you see. It is easiest to see by running the same case three ways, with
+:func:`aidas.vis.plot_velocity_wave_mask` drawing each mask on its own:
+
+.. code-block:: python
+
+    import cartopy.crs as ccrs
+    import matplotlib.pyplot as plt
+
+    fig, axes = plt.subplots(1, 3, figsize=(15, 5),
+                             subplot_kw=dict(projection=ccrs.PlateCarree()))
+
+    for ax, min_area in zip(axes, (0.25, 16., 400.)):
+        rad_scan = aidas.model.detect_velocity_waves(
+            'KOKX', rad_time='2010-12-26T23:45:15', max_range=137000.,
+            min_area=min_area)
+        aidas.vis.plot_velocity_wave_mask(
+            rad_scan, ax=ax, title=f"min_area = {min_area:g} km$^2$")
+
+.. plot::
+
+    import aidas
+    import cartopy.crs as ccrs
+    import matplotlib.pyplot as plt
+
+    fig, axes = plt.subplots(1, 3, figsize=(15, 5),
+                             subplot_kw=dict(projection=ccrs.PlateCarree()),
+                             gridspec_kw={'wspace': 0.25})
+
+    for ax, min_area in zip(axes, (0.25, 16., 400.)):
+        rad_scan = aidas.model.detect_velocity_waves(
+            'KOKX', rad_time='2010-12-26T23:45:15', max_range=137000.,
+            min_area=min_area)
+        aidas.vis.plot_velocity_wave_mask(
+            rad_scan, ax=ax, title=f"min_area = {min_area:g} km$^2$")
+    plt.show()
+
+At 0.25 km\ :sup:`2`, a single grid cell, nothing is filtered at all and speckle
+covers the domain along with the waves. At the default 16 km\ :sup:`2` the bands
+stand clear of it. At 400 km\ :sup:`2` only the longest and most coherent bands
+survive and the shorter waves embedded among them are gone, which is the point: the
+filter is a choice about scale, not only about noise. The detected area falls from
+about 19 500 km\ :sup:`2` to 15 600 and then to 10 100 across the three.
+
+The paper reports that the result is not very sensitive to the exact velocity
+threshold for high-amplitude waves, and thresholds for other instruments should scale
+with their noise floor.
 
 What the mask can and cannot tell you
 -------------------------------------

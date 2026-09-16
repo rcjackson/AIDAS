@@ -12,7 +12,8 @@ This module handles the visualization of detection masks on radar data.
 
     visualize_lake_breeze
     visualize_velocity_waves
+    plot_velocity_wave_mask
 """
 from .visualize_lake_breeze import visualize_lake_breeze
-from .visualize_velocity_waves import visualize_velocity_waves
+from .visualize_velocity_waves import plot_velocity_wave_mask, visualize_velocity_waves
 

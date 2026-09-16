@@ -25,6 +25,71 @@ def _add_map_features(ax, lon, lat):
     ax.add_feature(cfeature.STATES)
 
 
+def plot_velocity_wave_mask(radar_scan: RadarImage, ax=None, color='#1b3a6b',
+                            title=None, gridlines=True):
+    """
+    Draw the radial velocity wave mask on its own map.
+
+    The mask is binary, so it is drawn as one flat colour on white rather than with a
+    colour scale. On its own like this the spacing and orientation of the bands are
+    easy to read, which they are not when the mask is a contour over a velocity field.
+
+    Parameters
+    ----------
+    radar_scan: :py:meth:`RadarImage`
+        The :py:meth:`RadarImage` carrying the mask, as made by
+        :func:`aidas.model.detect_velocity_waves`.
+    ax: :py:meth:`cartopy.mpl.geoaxes.GeoAxes`, optional
+        The axes to draw into, which must be on a :py:meth:`cartopy.crs.PlateCarree`
+        projection. If None, a new figure and axes are made.
+    color: str
+        The colour to draw detections in.
+    title: str, optional
+        The title for the panel. If None, the two sweep times and the interval
+        between them are used.
+    gridlines: bool
+        Whether to draw labelled latitude and longitude gridlines.
+
+    Returns
+    -------
+    fig, ax: handles
+        The matplotlib figure and axis handle for the plot.
+    """
+    if radar_scan.velocity_wave_mask is None:
+        raise ValueError(
+            "This RadarImage has no velocity wave mask. Run aidas.model.detect_velocity_waves "
+            "on it first.")
+
+    lon = radar_scan.wave_grid_lon
+    lat = radar_scan.wave_grid_lat
+
+    if ax is None:
+        fig, ax = plt.subplots(1, 1, figsize=(6, 5.5),
+                subplot_kw=dict(projection=ccrs.PlateCarree()))
+    else:
+        fig = ax.get_figure()
+
+    # White where nothing was detected so the map shows through, one flat colour
+    # where it was. The mask is binary, so a colour scale would say nothing.
+    ax.pcolormesh(lon, lat, radar_scan.velocity_wave_mask,
+                  cmap=ListedColormap(['white', color]), vmin=0, vmax=1, shading='auto')
+    _add_map_features(ax, lon, lat)
+    if gridlines:
+        lines = ax.gridlines(draw_labels=True, linewidth=0.3, color='gray')
+        lines.top_labels = False
+        lines.right_labels = False
+
+    if title is None:
+        times = radar_scan.wave_scan_times
+        if times is None:
+            title = "Wave mask"
+        else:
+            gap = int((times[1] - times[0]) / np.timedelta64(1, 's'))
+            title = f"Wave mask\n{times[0]} to {times[1]} ({gap} s apart)"
+    ax.set_title(title)
+    return fig, ax
+
+
 def visualize_velocity_waves(radar_scan: RadarImage, bg_field='velocity', axes=None,
                              overlay=False, **kwargs):
     """
@@ -90,7 +155,6 @@ def visualize_velocity_waves(radar_scan: RadarImage, bg_field='velocity', axes=N
 
     lon = radar_scan.wave_grid_lon
     lat = radar_scan.wave_grid_lat
-    mask = radar_scan.velocity_wave_mask
     times = radar_scan.wave_scan_times
 
     # Py-ART's defaults here are a long title and a longer colourbar label, which
@@ -127,20 +191,8 @@ def visualize_velocity_waves(radar_scan: RadarImage, bg_field='velocity', axes=N
         title=title, colorbar_label=colorbar_label, **kwargs)
     _add_map_features(velocity_ax, lon, lat)
     if overlay:
-        velocity_ax.contour(lon, lat, mask, levels=[0.5], colors='k', linewidths=0.6)
+        velocity_ax.contour(lon, lat, radar_scan.velocity_wave_mask, levels=[0.5],
+                            colors='k', linewidths=0.6)
 
-    # White where nothing was detected so the map shows through, one flat colour
-    # where it was. The mask is binary, so a colour scale would say nothing.
-    mask_ax.pcolormesh(lon, lat, mask, cmap=ListedColormap(['white', mask_color]),
-                       vmin=0, vmax=1, shading='auto')
-    _add_map_features(mask_ax, lon, lat)
-    gridlines = mask_ax.gridlines(draw_labels=True, linewidth=0.3, color='gray')
-    gridlines.top_labels = False
-    gridlines.right_labels = False
-
-    if times is not None:
-        gap = int((times[1] - times[0]) / np.timedelta64(1, 's'))
-        mask_ax.set_title(f"Wave mask\n{times[0]} to {times[1]} ({gap} s apart)")
-    else:
-        mask_ax.set_title("Wave mask")
+    plot_velocity_wave_mask(radar_scan, ax=mask_ax, color=mask_color)
     return fig, axes

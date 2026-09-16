@@ -3,6 +3,7 @@
 from datetime import datetime
 
 import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
 import pyart
 import pytest
@@ -420,6 +421,31 @@ def test_volume_listing_skips_metadata_files():
 
     paths, _ = _nexrad_file_list('KOKX', datetime(2010, 12, 26, 23, 45, 15))
     assert any(path.endswith('KOKX20101226_234515_V03.gz') for path in paths)
+
+
+def test_plot_velocity_wave_mask_alone():
+    """The mask can be drawn on its own, into an axes the caller supplies."""
+    import cartopy.crs as ccrs
+
+    current, previous = _wave_pair()
+    scan = aidas.model.detect_velocity_waves(current, previous, dealias=False)
+
+    fig, ax = aidas.vis.plot_velocity_wave_mask(scan)
+    assert 'Wave mask' in ax.get_title()
+
+    # Into a caller's axes, which is how several settings get compared side by side.
+    fig, axes = plt.subplots(1, 2, subplot_kw=dict(projection=ccrs.PlateCarree()))
+    for axis, min_area in zip(axes, (1.0, 400.0)):
+        tuned = aidas.model.detect_velocity_waves(
+            current, previous, dealias=False, min_area=min_area)
+        returned_fig, returned_ax = aidas.vis.plot_velocity_wave_mask(
+            tuned, ax=axis, title=f"{min_area:g}")
+        assert returned_ax is axis
+        assert returned_fig is fig
+        assert returned_ax.get_title() == f"{min_area:g}"
+
+    with pytest.raises(ValueError, match="detect_velocity_waves"):
+        aidas.vis.plot_velocity_wave_mask(RadarImage())
 
 
 @pytest.mark.mpl_image_compare(tolerance=50)

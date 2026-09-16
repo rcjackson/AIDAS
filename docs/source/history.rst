@@ -14,6 +14,8 @@ History
   of its own beside the velocity it was detected from. That velocity is the
   dealiased, quality controlled sweep, kept on the :py:meth:`RadarImage` as
   ``wave_sweep_radar``, rather than the raw folded field in the original volume.
+  :func:`aidas.vis.plot_velocity_wave_mask` draws just the mask, for comparing
+  detections made with different settings side by side.
 * Added :func:`aidas.io.get_previous_scan`, which fetches the volume collected
   immediately before a given scan. The S3 listing behind it now skips the ``_MDM``
   metadata files, which share a timestamp with their volume but hold no radar data,
