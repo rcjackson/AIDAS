@@ -44,20 +44,35 @@ To see it:
 
     aidas.vis.visualize_velocity_waves(rad_scan)
 
+That particular example is a fair weather afternoon over Chicago rather than a wave
+event, and the mask comes back nearly empty, which is the right answer. The clear-air
+velocity field near the radar is noisy and the area filter throws nearly all of that
+noise away; what survives sits in the precipitation to the south, as a handful of
+convergence lines.
+
+The case from the paper
+-----------------------
+
+For a case with waves in it, here is the one the paper demonstrates the method with:
+KOKX at Upton, New York, late on 26 December 2010, with a low centre a couple of
+hundred kilometres to the southeast.
+
 .. plot::
 
     import aidas
     import matplotlib.pyplot as plt
 
-    rad_scan = aidas.model.detect_velocity_waves('KLOT', rad_time='2025-07-15T18:13:45')
-    fig, ax = aidas.vis.visualize_velocity_waves(rad_scan)
+    rad_scan = aidas.model.detect_velocity_waves(
+        'KOKX', rad_time='2010-12-26T23:45:15', max_range=137000.)
+    fig, ax = aidas.vis.visualize_velocity_waves(rad_scan, vmin=-25, vmax=25)
     plt.show()
 
-That example is a fair weather afternoon rather than a wave event, which is worth
-seeing. The clear-air velocity field near the radar is noisy, and what the area filter
-does with that noise is throw nearly all of it away: what survives sits in the
-precipitation to the south, as a handful of convergence lines rather than a wave
-train. A nearly empty mask is the right answer on a day with no waves in it.
+Taking a two dimensional Fourier transform of the mask puts the dominant sets at
+wavelengths of 14 to 19 km with their long axes running 28 to 39 degrees, SSW to NNE,
+and the wave train moving off to the northwest. The paper reports wavelengths on the
+order of 12 to 18 km with SSW to NNE axes for the same case. Several roughly parallel
+bands moving together like this are what a wave train looks like, and what
+distinguishes it from a single boundary.
 
 Tuning the detection
 --------------------
@@ -95,6 +110,10 @@ With a roughly four minute volume cycle, a 10 km wave has to be travelling slowe
 than about 21 m s\ :sup:`-1`. Faster than that and the wave train appears to
 stand still, flash in place, or move backwards. Clear-air volume coverage patterns
 can take ten minutes to come round again, which makes the limit tighter still.
+``wave_scan_times`` holds the times of the two sweeps that were actually
+differenced, so the interval can be checked rather than assumed. A pattern running
+SAILS revisits the lowest elevation part way through each volume, but AIDAS takes the
+base cut from both volumes, so the interval is one full volume cycle.
 
 The second is interpretation. Any linear convergence feature is flagged, not just
 waves: gust fronts, sea and lake breezes, fronts, and terrain effects all produce a
@@ -102,6 +121,18 @@ band. Those advect with the mean wind. A wave train instead looks like several
 roughly parallel bands moving together, and may move independently of the prevailing
 flow. Confirming that such a train really is a gravity wave takes evidence this mask
 does not carry.
+
+The paper makes that point with a second KOKX case, the winter storm of 1 February
+2021, which AIDAS will happily detect:
+
+.. code-block:: python
+
+    rad_scan = aidas.model.detect_velocity_waves('KOKX', rad_time='2021-02-01T09:03:09')
+
+It produces strong banding in both the rain and the snow, but the bands stay locked
+to the precipitation structures and move with them, so the paper attributes them to
+mesoscale convergence rather than to waves. The mask cannot tell the two apart; that
+is the reader's job.
 
 Pointing an instrument at a wave train
 --------------------------------------

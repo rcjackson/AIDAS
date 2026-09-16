@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 """Tests for the radial velocity wave detection of `aidas`."""
+from datetime import datetime
+
 import matplotlib
 import numpy as np
 import pyart
@@ -8,6 +10,7 @@ from scipy.ndimage import label
 
 import aidas
 from aidas.io import RadarImage
+from aidas.io.get_radar_scan import _nexrad_file_list
 from aidas.model.detect_velocity_waves import (
     _difference_sweeps,
     _nearest_azimuth_index,
@@ -44,6 +47,10 @@ def _synthetic_volume(shift_km=0.0, start_az=0.0, amplitude=3.0, background=10.0
     radar.azimuth['data'] = np.concatenate([azimuth, azimuth])
     radar.elevation['data'] = np.full(2 * nrays, 0.5)
     radar.fixed_angle['data'] = np.array([0.5, 0.5])
+    # Ray times of a split cut: the surveillance sweep first, the Doppler sweep
+    # after it, both offset from the start of the volume.
+    radar.time['data'] = np.concatenate([np.linspace(0.0, 30.0, nrays),
+                                         np.linspace(32.0, 57.0, nrays)])
     radar.latitude['data'] = np.array([41.6])
     radar.longitude['data'] = np.array([-88.0])
     radar.altitude['data'] = np.array([200.0])
@@ -103,8 +110,10 @@ def test_detects_plane_wave():
     np.testing.assert_allclose(scan.wave_grid_x[-1], NGATES * GATE_SPACING - GATE_SPACING / 2,
                                atol=GATE_SPACING)
     assert scan.wave_grid_lat.shape == mask.shape
-    assert scan.wave_scan_times == (np.datetime64('2025-07-15T18:00:00'),
-                                    np.datetime64('2025-07-15T18:05:00'))
+    # The times are those of the Doppler sweep, 32 s into each volume, not of the
+    # volumes themselves.
+    assert scan.wave_scan_times == (np.datetime64('2025-07-15T18:00:32'),
+                                    np.datetime64('2025-07-15T18:05:32'))
 
     # The crests run north-south, so a line of longitude crosses one band per
     # wavelength. Measure the spacing of the band edges along the centre row.
@@ -306,14 +315,78 @@ def test_detect_velocity_waves_on_nexrad():
     clear-air speckle out of the mask.
     """
     scan = aidas.model.detect_velocity_waves('KLOT', rad_time='2025-07-15T18:13:45')
-    assert scan.wave_scan_times == (np.datetime64('2025-07-15T18:06:46'),
-                                    np.datetime64('2025-07-15T18:13:45'))
+    assert scan.wave_scan_times == (np.datetime64('2025-07-15T18:08:00'),
+                                    np.datetime64('2025-07-15T18:14:59'))
     assert scan.velocity_wave_mask.shape == (1181, 1181)
     np.testing.assert_almost_equal(scan.velocity_wave_mask.sum(), 1569, decimal=-2)
 
     # Every surviving region is at least the 16 km2 the filter was asked for.
     sizes = np.bincount(label(scan.velocity_wave_mask, structure=np.ones((3, 3)))[0].ravel())[1:]
     assert (sizes * 0.25 >= 16.0).all()
+
+
+def test_kokx_winter_storm_case():
+    """
+    The 1 February 2021 KOKX case of the paper, its Fig. 5.
+
+    Asking for the 09:03:09 volume must difference it against the 08:56 one, as the
+    paper does. This volume runs SAILS, so it holds four sweeps at 0.48 degrees --
+    the base split cut and a supplemental one taken four minutes later. Picking the
+    supplemental cut of one volume against the base cut of the other would compare
+    sweeps minutes out of step, so the base cut has to win both times.
+    """
+    scan = aidas.model.detect_velocity_waves('KOKX', rad_time='2021-02-01T09:03:09')
+
+    assert scan.wave_sweep == 1, "the base Doppler cut, not the SAILS supplemental cut"
+    earlier, later = scan.wave_scan_times
+    assert earlier == np.datetime64('2021-02-01T08:56:35')
+    assert later == np.datetime64('2021-02-01T09:03:41')
+    # One volume cycle apart, not one cycle plus the SAILS offset.
+    assert (later - earlier) / np.timedelta64(1, 's') == 426
+
+    # The paper reads this case as banded convergence in the rain and snow rather
+    # than as waves, but either way it is a widespread, strongly banded signal.
+    mask = scan.velocity_wave_mask
+    np.testing.assert_almost_equal(mask.sum(), 81973, decimal=-3)
+    assert 0.02 < mask.mean() < 0.12
+
+
+def test_kokx_wave_case_matches_the_paper():
+    """
+    The 26 December 2010 KOKX case the paper demonstrates the method with, its Fig. 2.
+
+    This is the one real case with published wave properties to check against: long
+    axes running SSW to NNE, a horizontal wavelength on the order of 12 to 18 km,
+    and a train propagating northwest. The volumes are the older V03 files, whose
+    names the S3 listing has to recognise for the pairing to work at all.
+    """
+    scan = aidas.model.detect_velocity_waves('KOKX', rad_time='2010-12-26T23:45:15',
+                                             max_range=137000.)
+    # The paper quotes these two sweeps as 23:40:00 and 23:45:47.
+    assert scan.wave_scan_times == (np.datetime64('2010-12-26T23:40:00'),
+                                    np.datetime64('2010-12-26T23:45:48'))
+    assert scan.wave_grid_x[-1] == 137000.
+
+    # Recover the dominant wave from the mask itself and compare with the paper.
+    mask = scan.velocity_wave_mask.astype(float)
+    mask = mask - mask.mean()
+    window = np.outer(np.hanning(mask.shape[0]), np.hanning(mask.shape[1]))
+    power = np.abs(np.fft.fftshift(np.fft.fft2(mask * window))) ** 2
+
+    frequency = np.fft.fftshift(np.fft.fftfreq(mask.shape[0], d=0.5))  # cycles per km
+    fx, fy = np.meshgrid(frequency, frequency)
+    scale = np.hypot(fx, fy)
+    # Ignore the shape of the echo area itself and the smallest resolvable scales.
+    power[(scale < 1 / 40.) | (scale > 1 / 4.)] = 0
+    peak = np.unravel_index(np.argmax(power), power.shape)
+
+    wavelength = 1 / np.hypot(fx[peak], fy[peak])
+    assert 10.0 < wavelength < 22.0, f"wavelength {wavelength:.1f} km is not the paper's 12-18 km"
+
+    # The wavevector points across the bands, so the long axis is perpendicular to
+    # it. SSW to NNE is around 20 to 30 degrees.
+    long_axis = (np.degrees(np.arctan2(fx[peak], fy[peak])) + 90) % 180
+    assert 15.0 < long_axis < 60.0, f"band axis {long_axis:.0f} deg is not SSW to NNE"
 
 
 def test_get_previous_scan():
@@ -325,6 +398,24 @@ def test_get_previous_scan():
     # back, so the answer is the same.
     previous = aidas.io.get_previous_scan('KLOT', '2025-07-15T18:13:00')
     assert previous.time['units'].split()[2] == '2025-07-15T18:06:46Z'
+
+
+def test_volume_listing_skips_metadata_files():
+    """
+    Only real volumes are listed, in ascending time order.
+
+    Some volumes have an _MDM metadata file beside them carrying the same
+    timestamp. Py-ART cannot read one, and because the timestamps match it would be
+    picked whenever that time was the closest, so it has to be left out. Older
+    volumes are named _V03.gz rather than _V06 and do have to be kept.
+    """
+    paths, times = _nexrad_file_list('KOKX', datetime(2021, 2, 1, 9, 3, 9))
+    assert not any(path.endswith('_MDM') for path in paths)
+    assert all(later >= earlier for earlier, later in zip(times[:-1], times[1:]))
+    assert 's3://unidata-nexrad-level2/2021/02/01/KOKX/KOKX20210201_090309_V06' in paths
+
+    paths, _ = _nexrad_file_list('KOKX', datetime(2010, 12, 26, 23, 45, 15))
+    assert any(path.endswith('KOKX20101226_234515_V03.gz') for path in paths)
 
 
 @pytest.mark.mpl_image_compare(tolerance=50)

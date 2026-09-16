@@ -7,6 +7,7 @@ import torch
 import os
 import dask.bag as db
 import logging
+import re
 import tempfile
 
 from glob import glob
@@ -113,9 +114,10 @@ class RadarImage(object):
         These are two dimensional because the wave mask is on a Cartesian grid
         centred on the radar rather than on a latitude/longitude grid.
     wave_scan_times: 2-tuple of np.datetime64('s')
-        The times of the two volumes that were differenced to make the wave mask,
-        earlier first. The gap between them sets which waves are detectable, so it
-        is kept with the mask.
+        The times of the two sweeps that were differenced to make the wave mask,
+        earlier first. These are the times of the sweeps themselves rather than of
+        the volumes holding them, which are minutes earlier. The gap between them
+        sets which waves are detectable, so it is kept with the mask.
     wave_sweep: int
         The index of the sweep of ``pyart_object`` the wave mask was made from. On a
         NEXRAD split cut this is the Doppler cut, which is not the first sweep at
@@ -245,20 +247,23 @@ def _nexrad_file_list(radar, when, bucket_name='unidata-nexrad-level2'):
         response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
         keys = keys + [x['Key'] for x in response.get('Contents', [])]
 
+    # A volume is named like KLOT20250715_180646_V06, older ones like
+    # KOKX20101226_234515_V03.gz. The _MDM files that sit alongside some volumes
+    # carry metadata rather than radar data, so they are left out: Py-ART cannot
+    # read one, and because an MDM file shares its volume's timestamp it would
+    # otherwise be picked whenever that time was the closest match.
+    volume = re.compile(rf"^{re.escape(radar)}(\d{{8}}_\d{{6}})_V\d+(\.gz)?$")
+
     paths = []
     times = []
     for key in keys:
         name = key.split("/")[-1]
-        template = f"{radar}%Y%m%d_%H%M%S_V06_MDM" if name[-3:] == "MDM" else f"{radar}%Y%m%d_%H%M%S_V06"
-        try:
-            scan_time = datetime.strptime(name, template)
-        except ValueError:
-            # The bucket carries the odd file that does not follow the naming
-            # convention. Skipping it beats failing the whole listing.
-            logging.debug(f"Skipping {key}: not a recognised NEXRAD volume name.")
+        match = volume.match(name)
+        if match is None:
+            logging.debug(f"Skipping {key}: not a NEXRAD volume name.")
             continue
         paths.append(f"s3://{bucket_name}/{key}")
-        times.append(scan_time)
+        times.append(datetime.strptime(match.group(1), "%Y%m%d_%H%M%S"))
 
     if len(paths) == 0:
         raise ValueError(f"No {radar} volumes found in {bucket_name} for {when:%Y-%m-%d}.")

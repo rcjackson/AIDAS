@@ -13,7 +13,9 @@ History
 * Added :func:`aidas.vis.visualize_velocity_waves` for plotting that mask over the
   velocity field it came from.
 * Added :func:`aidas.io.get_previous_scan`, which fetches the volume collected
-  immediately before a given scan.
+  immediately before a given scan. The S3 listing behind it now skips the ``_MDM``
+  metadata files, which share a timestamp with their volume but hold no radar data,
+  and recognises the older ``_V03.gz`` volume names.
 * :func:`aidas.util.azimuth_point`, :func:`aidas.util.azimuth_from_ellipse` and the
   lidar triggering functions take a ``mask`` argument, so an instrument can be cued
   at a detected wave train as well as at the lake breeze. The default is unchanged.

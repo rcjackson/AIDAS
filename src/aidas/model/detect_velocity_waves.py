@@ -39,6 +39,32 @@ def _scan_time(radar):
     return np.datetime64(radar.time["units"].split()[2].rstrip("Z"))
 
 
+def _sweep_time(sweep_radar):
+    """
+    Read when a sweep itself was collected.
+
+    A volume takes several minutes to finish, and a VCP running SAILS comes back
+    to the lowest elevation part way through, so the start of the volume can be a
+    long way from the moment a given sweep was taken. What decides which waves are
+    detectable is the gap between the two sweeps that were differenced, so that is
+    measured on the sweeps rather than on the volumes holding them.
+
+    Parameters
+    ----------
+    sweep_radar: :py:meth:`pyart.core.Radar`
+        A single-sweep radar object.
+
+    Returns
+    -------
+    time: :func:`numpy.datetime64`
+        The time of the first ray of the sweep, to the nearest second. This is the
+        convention Py-ART's displays and the paper both quote a sweep by, so the
+        times reported here can be compared with either directly.
+    """
+    offset = int(round(float(sweep_radar.time['data'][0])))
+    return _scan_time(sweep_radar) + np.timedelta64(offset, 's')
+
+
 def _resolve_scan(scan, rad_time=None, bucket_name='unidata-nexrad-level2'):
     """
     Turn whatever the caller passed in into a Py-ART radar volume.
@@ -111,7 +137,13 @@ def _select_doppler_sweep(radar, elevation, vel_field='velocity'):
         raise ValueError(f"The radar volume has no '{vel_field}' field to detect waves in.")
 
     angles = np.asarray(radar.fixed_angle['data'], dtype=float)
-    for sweep in np.argsort(np.abs(angles - elevation)):
+    # A stable sort matters here. A VCP running SAILS revisits the lowest
+    # elevation part way through the volume, so several sweeps sit at the same
+    # fixed angle and the sort is all ties. An unstable sort would pick among them
+    # arbitrarily, which can mean differencing the base cut of one volume against
+    # the supplemental cut of the next, minutes away from it. Sorting stably takes
+    # the earliest cut at that elevation every time.
+    for sweep in np.argsort(np.abs(angles - elevation), kind='stable'):
         sweep = int(sweep)
         velocity = radar.get_field(sweep, vel_field)
         if np.any(~np.ma.getmaskarray(velocity)):
@@ -196,7 +228,7 @@ def _prepare_sweep(radar, elevation, reflectivity_threshold=0.0, dealias=True,
             'azimuth': np.asarray(sweep_radar.azimuth['data'], dtype=float) % 360.0,
             'elevation': float(np.mean(sweep_radar.elevation['data'])),
             'range': np.asarray(sweep_radar.range['data'], dtype=float),
-            'time': _scan_time(sweep_radar),
+            'time': _sweep_time(sweep_radar),
             'sweep': sweep}
 
 
