@@ -12,5 +12,12 @@ This module handles the preprocessing of radar data.
 
     RadarImage
     preprocess_radar_image
+    preprocess_radar_image_batch
+    get_previous_scan
 """
-from .get_radar_scan import RadarImage, preprocess_radar_image, preprocess_radar_image_batch
+from .get_radar_scan import (
+    RadarImage,
+    get_previous_scan,
+    preprocess_radar_image,
+    preprocess_radar_image_batch,
+)

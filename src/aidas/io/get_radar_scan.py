@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import torch
 import os
 import dask.bag as db
+import logging
 import tempfile
 
 from glob import glob
@@ -98,6 +99,27 @@ class RadarImage(object):
         The inferred lake breeze mask, where 1 = lakebreeze and 0 = not a lake breeze. 
     times: list of np.datetime64('s')
         The epoch time of the radar scans.
+    velocity_wave_mask: ny x nx ndarray
+        The radial velocity wave mask from :func:`aidas.model.detect_velocity_waves`,
+        where 1 = wave signature and 0 = no wave signature. Unlike
+        ``lakebreeze_mask``, which is stored transposed, this mask is indexed
+        ``[y, x]`` -- the first axis runs north, the second east -- so it lines up
+        with ``wave_grid_lat`` and ``wave_grid_lon`` without a transpose.
+    wave_grid_x, wave_grid_y: ndarray
+        The east and north distance of each wave mask column and row from the
+        radar in metres.
+    wave_grid_lat, wave_grid_lon: ny x nx ndarray
+        The latitude and longitude of every point of the wave mask in degrees.
+        These are two dimensional because the wave mask is on a Cartesian grid
+        centred on the radar rather than on a latitude/longitude grid.
+    wave_scan_times: 2-tuple of np.datetime64('s')
+        The times of the two volumes that were differenced to make the wave mask,
+        earlier first. The gap between them sets which waves are detectable, so it
+        is kept with the mask.
+    wave_sweep: int
+        The index of the sweep of ``pyart_object`` the wave mask was made from. On a
+        NEXRAD split cut this is the Doppler cut, which is not the first sweep at
+        that elevation.
     """
     pyart_object = None
     lat_range = None
@@ -108,6 +130,13 @@ class RadarImage(object):
     lakebreeze_mask = None
     aggregated_mask = None
     times = None
+    velocity_wave_mask = None
+    wave_grid_x = None
+    wave_grid_y = None
+    wave_grid_lat = None
+    wave_grid_lon = None
+    wave_scan_times = None
+    wave_sweep = None
     
     def __getitem__(self, key):
         """
@@ -186,6 +215,110 @@ class RadarImage(object):
         return self.aggregated_mask
 
 
+def _nexrad_file_list(radar, when, bucket_name='unidata-nexrad-level2'):
+    """
+    List the NEXRAD Level II volumes held for a site around a given time.
+
+    The listing spans the UTC day of *when* and the day before it, so a scan in
+    the first minutes of a day can still reach the volume that preceded it.
+
+    Parameters
+    ----------
+    radar: str
+        The 4-letter code of the radar site, for example KLOT.
+    when: :class:`datetime.datetime`
+        The time of interest. Its UTC day and the preceding day are listed.
+    bucket_name: str
+        The NEXRAD S3 bucket to list. Default is 'unidata-nexrad-level2'.
+
+    Returns
+    -------
+    paths: list of str
+        The s3:// path of every volume found, in ascending time order.
+    times: :func:`numpy.ndarray` of :class:`datetime.datetime`
+        The start time of each volume, matching *paths*.
+    """
+    s3 = boto3.client('s3', config=Config(signature_version=UNSIGNED))
+    keys = []
+    for day in (when - timedelta(days=1), when):
+        prefix = f'{day.year}/{day.month:02d}/{day.day:02d}/{radar}'
+        response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
+        keys = keys + [x['Key'] for x in response.get('Contents', [])]
+
+    paths = []
+    times = []
+    for key in keys:
+        name = key.split("/")[-1]
+        template = f"{radar}%Y%m%d_%H%M%S_V06_MDM" if name[-3:] == "MDM" else f"{radar}%Y%m%d_%H%M%S_V06"
+        try:
+            scan_time = datetime.strptime(name, template)
+        except ValueError:
+            # The bucket carries the odd file that does not follow the naming
+            # convention. Skipping it beats failing the whole listing.
+            logging.debug(f"Skipping {key}: not a recognised NEXRAD volume name.")
+            continue
+        paths.append(f"s3://{bucket_name}/{key}")
+        times.append(scan_time)
+
+    if len(paths) == 0:
+        raise ValueError(f"No {radar} volumes found in {bucket_name} for {when:%Y-%m-%d}.")
+
+    times = np.array(times)
+    order = np.argsort(times)
+    return [paths[i] for i in order], times[order]
+
+
+def get_previous_scan(radar, rad_time=None, bucket_name='unidata-nexrad-level2'):
+    """
+    Fetch the volume collected immediately before a given scan.
+
+    Wave detection differences two consecutive volumes, so it needs the scan
+    before the one the user asked for. This resolves the requested scan first and
+    then steps back one volume, rather than simply taking the nearest volume
+    before *rad_time*, which would return the requested scan itself whenever
+    *rad_time* falls after the start of the volume.
+
+    Parameters
+    ----------
+    radar: str or :py:meth:`pyart.core.Radar`
+        The 4-letter code of the radar site, or a radar volume to step back from.
+        When a volume is given, the site and time are read from it.
+    rad_time: ISO-format datestring, optional
+        The date/time string in YYYY-MM-DDTHH:MM:SS format of the scan to step
+        back from. If None, the latest scan is used. Ignored when *radar* is a
+        :py:meth:`pyart.core.Radar`.
+    bucket_name: str
+        The NEXRAD S3 bucket to use. Default is 'unidata-nexrad-level2'.
+
+    Returns
+    -------
+    radar: :py:meth:`pyart.core.Radar`
+        The volume preceding the requested scan.
+    """
+    if isinstance(radar, pyart.core.Radar):
+        site = radar.metadata.get('instrument_name', '')
+        if isinstance(site, bytes):
+            site = site.decode()
+        site = str(site).strip().upper()
+        if len(site) != 4:
+            raise ValueError(
+                "Could not work out which NEXRAD site this volume came from, so the "
+                "previous scan cannot be fetched. Pass the previous scan explicitly.")
+        target = datetime.strptime(
+            radar.time["units"].split()[2], "%Y-%m-%dT%H:%M:%SZ")
+    else:
+        site = radar
+        target = datetime.utcnow() if rad_time is None else datetime.strptime(rad_time, "%Y-%m-%dT%H:%M:%S")
+
+    paths, times = _nexrad_file_list(site, target, bucket_name=bucket_name)
+    current = int(np.argmin(np.abs(times - target)))
+    if current == 0:
+        raise ValueError(
+            f"No {site} volume found before {times[current]:%Y-%m-%dT%H:%M:%S}, so there is "
+            "nothing to difference against.")
+    return pyart.io.read_nexrad_archive(paths[current - 1])
+
+
 def preprocess_radar_image(radar, rad_time=None, lat_range=(41.1280, 42.5680),
                            lon_range=(-88.7176, -87.2873),
                            bucket_name='unidata-nexrad-level2'):
@@ -220,34 +353,8 @@ def preprocess_radar_image(radar, rad_time=None, lat_range=(41.1280, 42.5680),
             right_now = datetime.utcnow()
         else:
             right_now = datetime.strptime(rad_time, "%Y-%m-%dT%H:%M:%S")
-        yesterday = right_now - timedelta(days=1)
-        year = right_now.year
-        month = right_now.month
-        day = right_now.day
-
-        s3 = boto3.client('s3', config=Config(signature_version=UNSIGNED))
-        bucket_name = 'unidata-nexrad-level2'
-        radar = "KLOT"
-        prefix = f'{year}/{month:02d}/{day:02d}/{radar}'
-        response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
-        file_list = [x['Key'] for x in response['Contents']]
-        
-        # Find yesterday's scans
-        prefix = f'{yesterday.year}/{yesterday.month:02d}/{yesterday.day:02d}/{radar}'
-        response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
-        file_list = file_list + [x['Key'] for x in response['Contents']]
-        time_list = []
-        for filepath in file_list:
-            name = filepath.split("/")[-1]
-            if name[-3:] == "MDM":
-                time_list.append(
-                    datetime.strptime(name, f"{radar}%Y%m%d_%H%M%S_V06_MDM"))
-            else:
-                time_list.append(
-                    datetime.strptime(name, f"{radar}%Y%m%d_%H%M%S_V06"))
-
-        time_list = np.array(time_list)
-        path = f"s3://{bucket_name}/" + file_list[np.argmin(np.abs(time_list - right_now))]
+        file_list, time_list = _nexrad_file_list(radar, right_now, bucket_name=bucket_name)
+        path = file_list[np.argmin(np.abs(time_list - right_now))]
         cur_radar = pyart.io.read_nexrad_archive(path)
     elif isinstance(radar, pyart.core.Radar):
         cur_radar = radar
